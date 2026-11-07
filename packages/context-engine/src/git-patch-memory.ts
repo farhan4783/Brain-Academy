@@ -85,3 +85,4 @@ export class GitPatchMemory {
     return result;
   }
 }
+

@@ -67,3 +67,4 @@ export const TerminalStream: React.FC<TerminalStreamProps> = ({ logs = [] }) => 
     </div>
   );
 };
+

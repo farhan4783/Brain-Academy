@@ -34,3 +34,4 @@ router_settings:
 general_settings:
   database_url: os.environ/DATABASE_URL
   master_key: sk-hermes-master-proxy-key
+

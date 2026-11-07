@@ -116,3 +116,4 @@ Hermes-Clawdbot provides four unified interfaces connected via gRPC and WebSocke
 2. **Terminal CLI (`hermes run ...`)**: Native developer workflow directly in terminal with step logging.
 3. **Slack Bot (@slack/bolt)**: Thread-based asynchronous issue resolution in team channels.
 4. **Discord Bot (discord.js)**: Community and developer server interactions with markdown-rich diff formatting.
+

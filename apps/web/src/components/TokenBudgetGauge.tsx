@@ -49,3 +49,4 @@ export const TokenBudgetGauge: React.FC<TokenBudgetGaugeProps> = ({
     </div>
   );
 };
+

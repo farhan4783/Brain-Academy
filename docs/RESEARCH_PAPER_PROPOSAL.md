@@ -74,3 +74,4 @@ Hermes executes a 3-stage compaction:
 1. First open-source reference architecture combining Temporal.io durable workflows with sub-second Firecracker/E2B microVM isolation for autonomous coding agents.
 2. Formalization of AST-guided differential compaction algorithm reducing token footprint by 45% on multi-turn software development trajectories.
 3. Standardized reproducible SWE-bench style evaluation framework with live WebSocket-streamed control center.
+

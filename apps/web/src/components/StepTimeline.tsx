@@ -60,3 +60,4 @@ export const StepTimeline: React.FC<StepTimelineProps> = ({ steps }) => {
     </div>
   );
 };
+

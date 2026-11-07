@@ -58,3 +58,4 @@ export interface SandboxProvider {
    */
   reconnectSandbox(sandboxId: string): Promise<SandboxInstance | null>;
 }
+

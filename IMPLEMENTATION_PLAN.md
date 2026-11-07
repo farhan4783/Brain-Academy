@@ -202,3 +202,4 @@ Hermes-Clawdbot is an enterprise-grade autonomous software engineering execution
 2. **Milestone 2 (Week 8)**: Temporal workflow recovers seamlessly from simulated worker container crashes (`SIGKILL`).
 3. **Milestone 3 (Week 12)**: AST truncation and Git differential memory demonstrate $\ge 40\%$ reduction in token expenditure.
 4. **Milestone 4 (Week 16)**: SWE-bench style benchmark suite completes with verified test passes; research paper and demo video finalized.
+
