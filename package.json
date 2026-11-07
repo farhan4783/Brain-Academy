@@ -1,0 +1,30 @@
+{
+  "name": "hermes-clawdbot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Autonomous Multi-Platform Agent Engine with MicroVM Sandboxing, Durable Workflows & AST Context Compaction",
+  "author": "Mohd Farhan <mohdfarhan4002@gmail.com>",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "clean": "turbo run clean && rimraf node_modules",
+    "eval": "turbo run eval --filter=@hermes/eval-suite",
+    "worker:start": "turbo run start --filter=@hermes/agent-core"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

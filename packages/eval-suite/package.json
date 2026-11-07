@@ -1,0 +1,20 @@
+{
+  "name": "@hermes/eval-suite",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rimraf dist tsconfig.tsbuildinfo",
+    "eval": "node dist/cli-eval.js"
+  },
+  "dependencies": {
+    "@hermes/agent-core": "workspace:*",
+    "@hermes/sandbox": "workspace:*",
+    "@hermes/shared": "workspace:*",
+    "@temporalio/client": "^1.11.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}

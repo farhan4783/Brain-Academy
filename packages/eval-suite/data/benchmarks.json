@@ -1,0 +1,29 @@
+[
+  {
+    "id": "hermes-eval-001",
+    "repoName": "dubinc/dub",
+    "repoUrl": "https://github.com/dubinc/dub.git",
+    "repoCommit": "f78a29b",
+    "issueDescription": "Fix URL slug normalization regex to disallow trailing hyphens and consecutive punctuation.",
+    "testCommand": "pnpm test tests/slug.test.ts",
+    "expectedPassingTests": ["normalizeSlug handles punctuation", "no trailing hyphens"]
+  },
+  {
+    "id": "hermes-eval-002",
+    "repoName": "expressjs/cors",
+    "repoUrl": "https://github.com/expressjs/cors.git",
+    "repoCommit": "a1b2c3d",
+    "issueDescription": "Ensure Access-Control-Allow-Origin header is omitted when origin reflection is disabled and origin does not match whitelist.",
+    "testCommand": "npm test",
+    "expectedPassingTests": ["origin check handles exact matching", "wildcard regex origin fails gracefully"]
+  },
+  {
+    "id": "hermes-eval-003",
+    "repoName": "chalk/chalk",
+    "repoUrl": "https://github.com/chalk/chalk.git",
+    "repoCommit": "e8d9c0a",
+    "issueDescription": "Handle nested ANSI escape sequences correctly when resetting styling in multi-line strings.",
+    "testCommand": "npm test",
+    "expectedPassingTests": ["nested color reset test"]
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "name": "@hermes/cli",
+  "version": "1.0.0",
+  "bin": {
+    "hermes": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node dist/index.js",
+    "clean": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@hermes/agent-core": "workspace:*",
+    "@hermes/shared": "workspace:*",
+    "@temporalio/client": "^1.11.4",
+    "chalk": "^5.4.1",
+    "commander": "^13.0.0",
+    "ora": "^8.1.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
