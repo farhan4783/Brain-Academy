@@ -10,6 +10,7 @@
     "clean": "rimraf .next dist"
   },
   "dependencies": {
+    "@hermes/memory": "workspace:*",
     "@hermes/shared": "workspace:*",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",

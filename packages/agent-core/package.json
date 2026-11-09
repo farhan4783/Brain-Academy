@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hermes/context-engine": "workspace:*",
+    "@hermes/memory": "workspace:*",
     "@hermes/model-router": "workspace:*",
     "@hermes/sandbox": "workspace:*",
     "@hermes/shared": "workspace:*",

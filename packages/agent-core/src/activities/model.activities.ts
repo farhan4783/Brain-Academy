@@ -13,9 +13,17 @@ import {
   ModelTier,
   ToolCallSpec,
 } from "@hermes/shared";
+import {
+  TieredMemoryManager,
+  SkillRegistry,
+  HermesLearningLoop,
+} from "@hermes/memory";
 
 const router = new DynamicModelRouter();
 const budgeter = new TokenBudgeter();
+const memoryManager = new TieredMemoryManager();
+const skillRegistry = new SkillRegistry();
+const learningLoop = new HermesLearningLoop(skillRegistry);
 
 export interface StepInferenceInput {
   taskPrompt: string;
@@ -68,12 +76,19 @@ export async function inferAgentStepActivity(
     lastToolUsed: lastStep?.toolCall?.name,
   });
 
+  const systemMemoryPrompt = memoryManager.assembleSystemMemoryPrompt();
+  const skillsCatalogPrompt = skillRegistry.getCatalogPrompt();
+
   const systemPrompt = `You are Hermes-Clawdbot, an autonomous software engineering execution engine.
 Your goal is to solve the user's task in an ephemeral microVM sandbox.
 Rules:
 1. Always state your reasoning in a <thought> tag.
 2. Select an action formatted as JSON tool call: {"name": "bash" | "read_file" | "write_file" | "run_tests", "input": {...}}.
 3. When the task is verified and solved, output <complete>true</complete>.
+
+${systemMemoryPrompt}
+
+${skillsCatalogPrompt}
 `;
 
   const contextMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [];
@@ -153,4 +168,20 @@ Rules:
     stepCost: completion.costUsd,
   };
 }
+
+export async function reflectAndSynthesizeSkillActivity(input: {
+  taskPrompt: string;
+  history: AgentStepIteration[];
+  success: boolean;
+}): Promise<{ skillName: string; filePath: string } | null> {
+  const result = await learningLoop.reflectAndSynthesize(input);
+  if (result) {
+    memoryManager.recordLongTermFact(
+      `Synthesized procedural skill '${result.skillName}' after resolving: ${input.taskPrompt}`
+    );
+    return { skillName: result.skillName, filePath: result.filePath };
+  }
+  return null;
+}
+
 

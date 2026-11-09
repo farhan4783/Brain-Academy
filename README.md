@@ -11,19 +11,24 @@
 
 ## 🌟 Executive Summary
 
-**Hermes-Clawdbot** is an enterprise-grade autonomous software engineering execution engine designed to solve the critical reliability and security bottlenecks of state-of-the-art developer agents (inspired by Cognition's Devin, Anthropic's Claude Code, and Manis).
+**Hermes-Clawdbot** is an enterprise-grade autonomous software engineering execution engine. It unifies the multi-channel gateway & file-based memory of **OpenClaw (formerly Clawdbot by Peter Steinberger)** with the self-improving **learning loop of Nous Research's Hermes Agent**, while solving their fatal security and durability flaws using **Firecracker/E2B microVM isolation** and **Temporal.io durable workflow event sourcing**.
 
-Traditional LLM agents suffer from three catastrophic failure modes:
-1. **Unsafe & Ephemeral Execution**: Running untrusted code on host machines exposes host environments to security breaches.
+Traditional LLM agents suffer from four catastrophic failure modes:
+1. **Unsafe & Host-Polluting Execution**: Running untrusted code on host machines exposes host environments to security breaches.
 2. **Fragility & Server Crashes**: Multi-hour agent trajectories (15–60 minutes) fail completely if the orchestration server restarts or drops network connectivity.
 3. **Context Rot & Token Bloat**: Extended terminal logs and repeated full-file injections trigger attention degradation and runaway API bills across 200k+ token contexts.
+4. **Lack of Organic Learning**: Standard agents forget procedural execution traces, failing to synthesize reusable operational playbooks.
 
 **Hermes-Clawdbot** addresses these bottlenecks systematically:
-- 🛡️ **Ephemeral MicroVM Sandboxing**: Provisions isolated Firecracker microVMs or E2B sandboxes in **< 500ms**, with live WebSocket terminal streaming.
+- 🛡️ **Ephemeral MicroVM Sandboxing**: Provisions isolated Firecracker microVMs or E2B sandboxes in **< 500ms**, with live WebSocket terminal streaming and disk snapshotting.
 - 🔄 **Durable Workflow Execution**: Reconstructs the agent loop as a **Temporal.io** durable workflow. If a worker node crashes at step 14, it rehydrates state, reconnects to the active sandbox, and resumes step 15 seamlessly.
-- 🧠 **AST Context Compaction & Anti-Rot**: Automatically truncates terminal outputs > 50 lines (preserving stack traces), triggers structured hierarchical compaction at 75% capacity, and maintains code modifications as unified **Git diff patches** (reducing token consumption by 45%).
+- 🌐 **Central Gateway Daemon (`ws://127.0.0.1:18789`)**: Multi-channel gateway connecting Slack, Discord, Telegram (grammY), WhatsApp, CLI, and Web UI with autonomous Cron and silent Heartbeat scheduling.
+- 🧠 **4-Tier Memory & Self-Evolution Learning Loop**: Implements OpenClaw/Hermes file-based memory (`SOUL.md`, `USER.md`, `MEMORY.md`, episodic daily logs) and autonomously reflects post-turn to synthesize reusable **`SKILL.md`** playbooks via progressive disclosure.
+- 📉 **AST Context Compaction & Anti-Rot**: Automatically truncates terminal outputs > 50 lines (preserving stack traces), triggers structured hierarchical compaction at 75% capacity, and maintains code modifications as unified **Git diff patches** (reducing token consumption by 45%).
 - 🔀 **Dynamic Model Router**: Dynamically routes routine sub-tasks (file reads, bash commands) to lightweight models (Claude Haiku / Llama-3-8B) while escalating complex debugging and refactoring to deep reasoning models (Claude 3.5 Sonnet / DeepSeek-R1).
 - 🧪 **SWE-Bench Evaluation Harness**: Automated benchmarking platform to evaluate agent performance on real open-source repositories (e.g. Dub.sh, Express, Chalk).
+
+Read our full comparative analysis in [OPENCLAW_HERMES_SYNTHESIS_AND_IMPROVEMENTS.md](file:///c:/Users/Acer/Desktop/Dekstop/Work/Clwdhermes/docs/OPENCLAW_HERMES_SYNTHESIS_AND_IMPROVEMENTS.md).
 
 ---
 

@@ -26,14 +26,17 @@ const {
   },
 });
 
-const { inferAgentStepActivity, checkAndPerformCompactionActivity } =
-  proxyActivities<typeof modelActivities>({
-    startToCloseTimeout: "3 minutes",
-    retry: {
-      initialInterval: "2 seconds",
-      maximumAttempts: 3,
-    },
-  });
+const {
+  inferAgentStepActivity,
+  checkAndPerformCompactionActivity,
+  reflectAndSynthesizeSkillActivity,
+} = proxyActivities<typeof modelActivities>({
+  startToCloseTimeout: "3 minutes",
+  retry: {
+    initialInterval: "2 seconds",
+    maximumAttempts: 3,
+  },
+});
 
 // Signals & Queries for real-time interaction
 export const cancelTaskSignal = defineSignal("cancelTask");
@@ -130,6 +133,14 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
       if (stepInference.isComplete) {
         state.status = "COMPLETED";
         state.history.push(currentIteration);
+
+        // Autonomous Self-Evolution Learning Loop: Synthesize L4 Skill
+        await reflectAndSynthesizeSkillActivity({
+          taskPrompt: request.prompt,
+          history: state.history,
+          success: true,
+        }).catch(() => {});
+
         break;
       }
 
