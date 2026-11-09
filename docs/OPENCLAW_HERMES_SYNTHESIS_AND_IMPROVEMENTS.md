@@ -101,3 +101,4 @@ Hermes-Clawdbot synthesizes the best aspects of OpenClaw and Hermes Agent while 
 
 ### 6. Interactive Control Center (`apps/web`)
 - Next.js 15 dashboard featuring live Xterm.js microVM streaming, step timeline, Git diff viewer, 4-tier memory inspector, L4 skills catalog, and competitive benchmark matrices.
+

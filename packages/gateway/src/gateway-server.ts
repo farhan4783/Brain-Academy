@@ -193,3 +193,4 @@ if (process.argv[1]?.endsWith("gateway-server.js") || process.argv[1]?.endsWith(
     process.exit(1);
   });
 }
+
