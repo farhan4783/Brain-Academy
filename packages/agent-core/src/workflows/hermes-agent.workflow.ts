@@ -3,6 +3,7 @@ import {
   defineSignal,
   defineQuery,
   setHandler,
+  condition,
 } from "@temporalio/workflow";
 import type * as sandboxActivities from "../activities/sandbox.activities.js";
 import type * as modelActivities from "../activities/model.activities.js";
@@ -10,7 +11,6 @@ import {
   AgentState,
   AgentStepIteration,
   TaskRequest,
-  TaskStatus,
 } from "@hermes/shared";
 
 const {
@@ -18,6 +18,7 @@ const {
   executeCommandActivity,
   captureGitDiffActivity,
   destroySandboxActivity,
+  compensatingTransactionsActivity,
 } = proxyActivities<typeof sandboxActivities>({
   startToCloseTimeout: "5 minutes",
   retry: {
@@ -40,11 +41,16 @@ const {
 
 // Signals & Queries for real-time interaction
 export const cancelTaskSignal = defineSignal("cancelTask");
+export const pauseTaskSignal = defineSignal("pauseTask");
+export const resumeTaskSignal = defineSignal("resumeTask");
+export const approveExecutionSignal = defineSignal<[boolean]>("approveExecution");
 export const provideFeedbackSignal = defineSignal<[string]>("provideFeedback");
 export const getAgentStateQuery = defineQuery<AgentState>("getAgentState");
 
 export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentState> {
   let isCancelled = false;
+  let isPaused = false;
+  let approvalDecision: boolean | null = null;
   let userFeedback: string | null = null;
 
   const state: AgentState = {
@@ -62,6 +68,20 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
     isCancelled = true;
     state.status = "FAILED";
     state.errorMessage = "Cancelled by user";
+  });
+
+  setHandler(pauseTaskSignal, () => {
+    isPaused = true;
+    state.status = "AWAITING_USER_INPUT";
+  });
+
+  setHandler(resumeTaskSignal, () => {
+    isPaused = false;
+    state.status = "RUNNING";
+  });
+
+  setHandler(approveExecutionSignal, (approved: boolean) => {
+    approvalDecision = approved;
   });
 
   setHandler(provideFeedbackSignal, (feedback: string) => {
@@ -87,6 +107,12 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
 
     // Step 2: Durable ReAct Execution Loop
     while (state.currentStep < maxSteps && !isCancelled) {
+      // Pause handling
+      if (isPaused) {
+        await condition(() => !isPaused || isCancelled);
+        if (isCancelled) break;
+      }
+
       state.currentStep++;
 
       // Check context budget & compact if > 75% capacity
@@ -104,7 +130,7 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
 
       // Model inference step (dynamically routed between Tier 1 and Tier 2)
       const promptToUse = userFeedback
-        ? `${request.prompt}\n[User Provided Input]: ${userFeedback}`
+        ? `${request.prompt}\n[User Feedback]: ${userFeedback}`
         : request.prompt;
       userFeedback = null;
 
@@ -144,12 +170,41 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
         break;
       }
 
+      // Check for sensitive operations requiring human-in-the-loop approval
+      const cmd =
+        (stepInference.toolCall?.input.command as string) ||
+        (stepInference.toolCall?.input.path ? `cat ${stepInference.toolCall.input.path}` : "");
+
+      const isSensitive =
+        cmd.includes("git push") ||
+        cmd.includes("rm ") ||
+        cmd.includes("publish") ||
+        cmd.includes("deploy");
+
+      if (isSensitive) {
+        state.status = "AWAITING_USER_INPUT";
+        approvalDecision = null;
+        // Wait up to 10 minutes for human approval signal
+        const approved = await condition(() => approvalDecision !== null, "10 minutes");
+        if (!approved || approvalDecision === false) {
+          currentIteration.observation = {
+            toolCallId: `blocked_${Date.now()}`,
+            stdout: "",
+            stderr: "Operation rejected by user or approval timed out.",
+            exitCode: 1,
+            durationMs: 0,
+            truncated: false,
+            originalLinesCount: 1,
+          };
+          state.history.push(currentIteration);
+          state.status = "RUNNING";
+          continue;
+        }
+        state.status = "RUNNING";
+      }
+
       // Execute Tool in MicroVM Sandbox
       if (stepInference.toolCall) {
-        const cmd =
-          (stepInference.toolCall.input.command as string) ||
-          `cat ${stepInference.toolCall.input.path}`;
-
         const observation = await executeCommandActivity(sandboxId, cmd);
         currentIteration.observation = observation;
       }
@@ -164,14 +219,17 @@ export async function hermesAgentWorkflow(request: TaskRequest): Promise<AgentSt
   } catch (error: unknown) {
     state.status = "FAILED";
     state.errorMessage = (error as Error).message;
+
+    // Temporal Saga Pattern: Execute compensating transactions on failure
+    if (sandboxId) {
+      await compensatingTransactionsActivity(sandboxId, request.taskId, (error as Error).message);
+    }
   } finally {
     state.endTime = new Date().toISOString();
-    // Clean up microVM sandbox
-    if (sandboxId) {
+    if (sandboxId && state.status === "COMPLETED") {
       await destroySandboxActivity(sandboxId);
     }
   }
 
   return state;
 }
-

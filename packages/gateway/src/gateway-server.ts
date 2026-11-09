@@ -1,12 +1,21 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { Connection, Client as TemporalClient } from "@temporalio/client";
-import { hermesAgentWorkflow, getAgentStateQuery, cancelTaskSignal, provideFeedbackSignal } from "@hermes/agent-core";
+import {
+  hermesAgentWorkflow,
+  getAgentStateQuery,
+  cancelTaskSignal,
+  provideFeedbackSignal,
+  pauseTaskSignal,
+  resumeTaskSignal,
+  approveExecutionSignal,
+} from "@hermes/agent-core";
 import { TaskRequest, AgentState } from "@hermes/shared";
 import { TieredMemoryManager, SkillRegistry, HermesLearningLoop } from "@hermes/memory";
 import { ChannelRegistry } from "./channels/channel-registry.js";
 import { TelegramChannelConnector } from "./channels/telegram.channel.js";
 import { WhatsAppChannelConnector } from "./channels/whatsapp.channel.js";
 import { GatewayScheduler } from "./scheduler.js";
+import { GatewayPairingAuth } from "./pairing-auth.js";
 
 export class GatewayServer {
   private port: number;
@@ -17,6 +26,7 @@ export class GatewayServer {
   private learningLoop = new HermesLearningLoop(this.skillRegistry);
   private channelRegistry = new ChannelRegistry();
   private scheduler: GatewayScheduler;
+  private pairingAuth = new GatewayPairingAuth();
   private activeClients = new Set<WebSocket>();
 
   constructor(port = 18789) {
@@ -118,6 +128,20 @@ export class GatewayServer {
     const client = await this.temporalClientPromise;
 
     switch (msg.action) {
+      case "auth.pair": {
+        const { clientId } = msg.payload as { clientId: string };
+        const code = this.pairingAuth.generatePairingCode(clientId || "node");
+        ws.send(JSON.stringify({ status: "PAIRING_CODE_GENERATED", code, expiresInSeconds: 300 }));
+        break;
+      }
+
+      case "auth.verify": {
+        const { code } = msg.payload as { code: string };
+        const result = this.pairingAuth.verifyPairingCode(code);
+        ws.send(JSON.stringify({ status: result.success ? "AUTHENTICATED" : "AUTH_FAILED", ...result }));
+        break;
+      }
+
       case "task.submit": {
         const req = msg.payload as unknown as TaskRequest;
         const workflowId = await this.dispatchTask(req);
@@ -130,6 +154,30 @@ export class GatewayServer {
         const handle = client.workflow.getHandle(`hermes-${taskId}`);
         await handle.signal(cancelTaskSignal);
         ws.send(JSON.stringify({ status: "CANCELLING", taskId }));
+        break;
+      }
+
+      case "task.pause": {
+        const { taskId } = msg.payload as { taskId: string };
+        const handle = client.workflow.getHandle(`hermes-${taskId}`);
+        await handle.signal(pauseTaskSignal);
+        ws.send(JSON.stringify({ status: "PAUSED", taskId }));
+        break;
+      }
+
+      case "task.resume": {
+        const { taskId } = msg.payload as { taskId: string };
+        const handle = client.workflow.getHandle(`hermes-${taskId}`);
+        await handle.signal(resumeTaskSignal);
+        ws.send(JSON.stringify({ status: "RESUMED", taskId }));
+        break;
+      }
+
+      case "task.approve": {
+        const { taskId, approved } = msg.payload as { taskId: string; approved: boolean };
+        const handle = client.workflow.getHandle(`hermes-${taskId}`);
+        await handle.signal(approveExecutionSignal, approved);
+        ws.send(JSON.stringify({ status: "APPROVAL_RECORDED", taskId, approved }));
         break;
       }
 
@@ -193,4 +241,3 @@ if (process.argv[1]?.endsWith("gateway-server.js") || process.argv[1]?.endsWith(
     process.exit(1);
   });
 }
-

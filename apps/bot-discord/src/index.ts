@@ -1,6 +1,13 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import {
+  Client,
+  GatewayIntentBits,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+} from "discord.js";
 import { Connection, Client as TemporalClient } from "@temporalio/client";
-import { hermesAgentWorkflow } from "@hermes/agent-core";
+import { hermesAgentWorkflow, approveExecutionSignal } from "@hermes/agent-core";
 import { TaskRequest } from "@hermes/shared";
 
 const discordClient = new Client({
@@ -26,7 +33,14 @@ async function main() {
 
     if (message.content.startsWith("!hermes ")) {
       const prompt = message.content.replace("!hermes ", "").trim();
-      const reply = await message.reply("🚀 Dispatching task to Hermes-Clawdbot microVM cluster...");
+
+      const embed = new EmbedBuilder()
+        .setColor(0x0ea5e9)
+        .setTitle("🦅 Hermes-Clawdbot Autonomous Execution")
+        .setDescription(`**Prompt:** ${prompt}\n\nSpawning Firecracker/E2B microVM (<500ms)...`)
+        .setFooter({ text: "Temporal.io Durable Engine • OpenClaw Gateway" });
+
+      const reply = await message.reply({ embeds: [embed] });
 
       const taskId = `discord_${message.channelId}_${message.id}`;
       const taskRequest: TaskRequest = {
@@ -47,12 +61,42 @@ async function main() {
         });
 
         const state = await handle.result();
-        await reply.edit(
-          `✅ **Task Completed!**\n- Status: \`${state.status}\`\n- Steps: \`${state.currentStep}\`\n- Tokens: \`${state.totalTokensUsed}\`\n- Cost: \`$${state.totalCostUsd.toFixed(4)}\``
-        );
+
+        const finishedEmbed = new EmbedBuilder()
+          .setColor(state.status === "COMPLETED" ? 0x10b981 : 0xef4444)
+          .setTitle(state.status === "COMPLETED" ? "✅ Task Successfully Solved" : "❌ Task Ended")
+          .addFields(
+            { name: "Status", value: `\`${state.status}\``, inline: true },
+            { name: "Steps", value: `\`${state.currentStep}\``, inline: true },
+            { name: "Total Tokens", value: `\`${state.totalTokensUsed.toLocaleString()}\``, inline: true },
+            { name: "Total Cost", value: `\`$${state.totalCostUsd.toFixed(4)} USD\``, inline: true }
+          );
+
+        await reply.edit({ embeds: [finishedEmbed] });
       } catch (err: unknown) {
-        await reply.edit(`❌ **Task Failed:** ${(err as Error).message}`);
+        await reply.edit({
+          content: `❌ **Task Failed:** ${(err as Error).message}`,
+          embeds: [],
+        });
       }
+    }
+  });
+
+  // Handle interactive Discord button approvals
+  discordClient.on("interactionCreate", async (interaction) => {
+    if (!interaction.isButton()) return;
+
+    const [action, taskId] = interaction.customId.split(":");
+    if (!taskId) return;
+
+    const handle = temporalClient.workflow.getHandle(`discord-wf-${taskId}`);
+
+    if (action === "approve") {
+      await handle.signal(approveExecutionSignal, true).catch(() => {});
+      await interaction.reply({ content: "✅ Execution approved.", ephemeral: true });
+    } else if (action === "reject") {
+      await handle.signal(approveExecutionSignal, false).catch(() => {});
+      await interaction.reply({ content: "🛑 Execution rejected.", ephemeral: true });
     }
   });
 
@@ -64,4 +108,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

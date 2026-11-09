@@ -1,12 +1,12 @@
-# Hermes-Clawdbot: 16-Week Comprehensive Implementation Plan
+# Hermes-Clawdbot: Master Industrial Implementation Plan
 
-## Executive Blueprint
+## Executive Blueprint & Production Standards
 
 Hermes-Clawdbot is an enterprise-grade autonomous software engineering execution engine engineered to solve the four fatal bottlenecks of modern LLM agents:
-1. **Unsafe execution of arbitrary code** $\to$ Ephemeral microVM sandboxes (<500ms provision).
-2. **Fragility over long-running workflows** $\to$ Temporal.io durable state replay and crash resilience.
-3. **Context window degradation & high token costs** $\to$ AST-guided observation pruning and Git differential memory.
-4. **Lack of empirical performance validation** $\to$ Automated SWE-bench style repository evaluations.
+1. **Unsafe execution of arbitrary code** $\to$ Ephemeral microVM sandboxes (<500ms provision via Firecracker REST API & E2B).
+2. **Fragility over long-running workflows** $\to$ Temporal.io durable state replay, Saga pattern compensation, and crash resilience.
+3. **Context window degradation & high token costs** $\to$ AST-guided observation pruning (>50 lines), code skeleton extraction (-70%), and Git differential memory (-45%).
+4. **Lack of verifiable performance & learning** $\to$ Automated SWE-bench style evals paired with Nous Research self-evolution learning loops synthesizing reusable `SKILL.md` playbooks.
 
 ---
 
@@ -14,192 +14,179 @@ Hermes-Clawdbot is an enterprise-grade autonomous software engineering execution
 
 ```
 +-----------------------------------------------------------------------------------+
-| WEEKS 1-4: Foundation & Sandboxing                                                |
-| - Set up Firecracker/E2B microVM environment & terminal streaming via WebSocket. |
-| - Build multi-platform gateway bridge (Slack, Discord, CLI, Web UI).              |
+| WEEKS 1-4: Foundation, Ephemeral MicroVMs & Universal Gateway                     |
+| - Firecracker Unix domain socket REST client & sub-500ms boot lifecycle.          |
+| - Vsock guest agent streaming protocol (CID 3 / Port 52).                         |
+| - OpenClaw Universal Gateway daemon on ws://127.0.0.1:18789 with pairing auth.   |
+| - Multi-platform connectors: Slack, Discord, Telegram, WhatsApp, CLI, and Web UI. |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
-| WEEKS 5-8: Durable Execution & Temporal Loop                                      |
-| - Wrap ReAct agent loops inside Temporal.io workflows.                            |
-| - Test crash recovery by killing worker containers mid-task and verifying replay. |
+| WEEKS 5-8: Durable Execution, Temporal Saga & Human-in-the-Loop                   |
+| - Deterministic ReAct loop wrapped in Temporal.io workflows.                      |
+| - Temporal Saga pattern: automatic compensating autopsy snapshots on failure.     |
+| - Human-in-the-loop approval signals for sensitive actions (git push, rm, deploy).|
+| - Automated chaos test: worker SIGKILL at step 14 with seamless step 15 replay.   |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
-| WEEKS 9-12: Context Compaction & Model Routing                                    |
-| - Build AST observation pruner & Git patch differential memory.                   |
-| - Implement context compaction engine to handle context windows > 200k.           |
-| - Configure LiteLLM dynamic model routing based on task complexity.               |
+| WEEKS 9-12: Context Compaction, AST Code Skeletons & Dynamic Model Routing        |
+| - CodeSkeletonExtractor eliding method bodies across TS, Py, Go (-70% tokens).   |
+| - TestFailureParser isolating exact assertion diffs for Jest, Vitest, Pytest.     |
+| - Git patch differential memory & 75% capacity hierarchical compactor.            |
+| - LiteLLM dynamic router with circuit-breaker failover & prompt security filter.  |
 +-----------------------------------------------------------------------------------+
                                          |
                                          v
 +-----------------------------------------------------------------------------------+
-| WEEKS 13-16: Benchmarking, UI & Research Paper                                    |
-| - Build SWE-style eval benchmarks on real open-source repositories.               |
-| - Finalize Next.js timeline UI with live terminal logs and code diff previews.    |
-| - Write research manuscript and compile demo video.                               |
+| WEEKS 13-16: 4-Tier Memory, Learning Loop, SWE-Bench Evals & Next.js 15 UI        |
+| - 4-Tier Memory (SOUL, USER, MEMORY, daily logs) with session-kind write gating.   |
+| - Self-evolution learning loop synthesizing verified L4 SKILL.md playbooks.       |
+| - Dockerized SWE-bench runner executing issue suites on Dub.sh, Express, Chalk.   |
+| - Next.js 15 Control Center with live Xterm.js streaming, diffs & memory editor.  |
 +-----------------------------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Phase-by-Phase Technical Specifications
+## 2. In-Depth Industrial Module Specifications
 
-### Phase 1: Foundation, Ephemeral MicroVMs & Gateway (Weeks 1–4)
+### Module 1: MicroVM Sandboxing & Vsock Protocol (`packages/sandbox`)
 
-#### Sprint 1 (Week 1): Monorepo Scaffold & Infrastructure
-- **Deliverables**:
-  - Turborepo + pnpm workspace configuration (`packages/*`, `apps/*`).
-  - Docker Compose stack for local development (Temporal, PostgreSQL, Qdrant, LiteLLM proxy).
-  - Environment validation and configuration schema using Zod.
-- **Verification**: `pnpm build` passes across all packages; `docker compose up -d` brings up all 5 infrastructure services healthy within 30 seconds.
-
-#### Sprint 2 (Week 2): MicroVM Sandboxing Core (`@hermes/sandbox`)
-- **Deliverables**:
-  - Define unified `SandboxInstance` and `SandboxProvider` TypeScript interfaces.
-  - Integrate **E2B SDK** for instant cloud-isolated microVMs with sub-500ms provision times.
-  - Implement **Firecracker MicroVM** driver for bare-metal Linux environments using `vsock` and REST API sockets.
-  - Implement **Docker Sandbox** fallback for local offline development.
-  - Workspace git mounting: shallow-clone user repositories into `/workspace` with isolated non-root user permissions.
-- **Verification**: Benchmark test measuring sandbox creation and initialization latency consistently $\le 480\text{ ms}$.
-
-#### Sprint 3 (Week 3): Terminal Multiplexing & WebSocket Streaming
-- **Deliverables**:
-  - Dual stream multiplexer separating `stdout` and `stderr`.
-  - WebSocket event dispatcher streaming live bash execution output chunks.
-  - Execution timeout guard (default 120s per shell command) to prevent infinite loops.
-- **Verification**: Stream a live build command (e.g. `npm install`) and verify real-time reception of chunks via WebSocket without packet loss.
-
-#### Sprint 4 (Week 4): Multi-Platform Gateway Bridge
-- **Deliverables**:
-  - **CLI Client (`@hermes/cli`)**: Commander.js CLI with commands: `hermes run "<prompt>" --repo <url>`.
-  - **Slack Bot (`@hermes/bot-slack`)**: `@slack/bolt` bot listening to app mentions and thread replies.
-  - **Discord Bot (`@hermes/bot-discord`)**: `discord.js` bot with `!hermes <prompt>` trigger.
-  - **Web Dashboard Foundation (`@hermes/web`)**: Next.js 15 layout with Tailwind CSS.
-- **Verification**: Dispatching a prompt from Slack, Discord, and CLI triggers a mock agent session and replies back into the respective platform channel.
+#### 1.1 Firecracker REST API Lifecycle
+1. **Boot Source (`PUT /boot-source`)**:
+   - `kernel_image_path`: Uncompressed Linux kernel image (`vmlinux.bin`).
+   - `boot_args`: `console=ttyS0 reboot=k panic=1 pci=off nomodules rw ip=172.16.0.2::172.16.0.1:255.255.255.0::eth0:off init=/hermes/guest-init`
+2. **Copy-on-Write Rootfs (`PUT /drives/rootfs`)**:
+   - Ephemeral overlay sparse file created in $<10\text{ms}$ using `qemu-img create -f qcow2 -b base.ext4 overlay.ext4`.
+   - Never mutates the base golden image.
+3. **Machine Config (`PUT /machine-config`)**:
+   - `vcpu_count: 2`, `mem_size_mib: 2048`, `smt: false`, `track_dirty_pages: true`.
+4. **Network & TAP Isolation (`PUT /network-interfaces/eth0`)**:
+   - Host `tapX` interface created and assigned to microVM with non-root ownership.
+   - IPTables rules enforce strict outbound isolation: blocks access to host private subnets (`10.0.0.0/8`, `192.168.0.0/16`, `169.254.169.254`).
+5. **Vsock Agent Protocol (`PUT /vsock`)**:
+   - Guest CID: 3, Host UDS path: `/tmp/hermes_fc_<id>.vsock`.
+   - Guest daemon (`hermes-guest-agent`) listens on port 52.
+   - Framing Protocol:
+     - `CONNECT 52\n`
+     - `EXEC {"cmd": "npm test", "cwd": "/workspace", "timeoutMs": 120000}\n`
+     - Streams: `OUT <base64_chunk>\n`, `ERR <base64_chunk>\n`, `EXIT <code_number>\n`.
 
 ---
 
-### Phase 2: Durable Execution & Temporal State Machine (Weeks 5–8)
+### Module 2: Durable Workflow & Saga Pattern (`packages/agent-core`)
 
-#### Sprint 5 (Week 5): Temporal Workflow Architecture (`@hermes/agent-core`)
-- **Deliverables**:
-  - Reconstruct the ReAct loop as `hermesAgentWorkflow(request: TaskRequest)`.
-  - Define Temporal Activity interfaces:
-    - `provisionSandboxActivity`: Provisions microVM, mounts repository.
-    - `executeCommandActivity`: Runs tool execution with timeout.
-    - `captureGitDiffActivity`: Retrieves workspace modifications.
-    - `destroySandboxActivity`: Cleans up microVM on completion.
-  - Activity retry policies with exponential backoff and jitter.
-- **Verification**: Run a 10-step mock trajectory and verify that all steps are recorded deterministically in the Temporal Web UI event log.
+#### 2.1 ReAct State Machine as Temporal Workflow
+- **Workflow ID**: `hermes-<taskId>`.
+- **Task Queue**: `hermes-clawdbot-queue`.
+- **Execution Loop**:
+  $$\text{Loop: } \text{Observation} \to \text{Compaction Check} \to \text{Model Routing} \to \text{Security Scan} \to \text{Tool Activity Execution}$$
 
-#### Sprint 6 (Week 6): Worker Rehydration & Reconnection
-- **Deliverables**:
-  - Decouple sandbox lifecycles from worker process lifetimes.
-  - Register active `sandboxId` in workflow state.
-  - Implement `reconnectSandbox(sandboxId)` to allow recovering workers to reconnect to a running microVM without destroying or restarting it.
-- **Verification**: Execute a long command inside the sandbox, send `kill -9` to the worker process, restart the worker, and verify the workflow resumes from the exact activity.
+#### 2.2 Temporal Saga Compensating Transactions
+When a task fails (e.g. fatal error, timeout, or user cancellation):
+1. Captures full memory/disk state snapshot: `PUT /snapshot/create`.
+2. Stores snapshot ID in PostgreSQL audit ledger.
+3. Appends autopsy entry to today's episodic memory log: `memory/YYYY-MM-DD.md`.
+4. Gracefully terminates microVM and reclaims allocated TAP IP address.
 
-#### Sprint 7 (Week 7): Signal & Query Interactivity
-- **Deliverables**:
-  - Temporal Signals:
-    - `cancelTaskSignal`: Gracefully cancels task, snapshots sandbox, and cleans up.
-    - `provideFeedbackSignal`: Injects user guidance directly into the active ReAct loop mid-run.
-  - Temporal Queries:
-    - `getAgentStateQuery`: Real-time query of current step, accumulated tokens, active diffs, and execution status.
-- **Verification**: Send a user clarification signal mid-run and verify the LLM's next thought incorporates the user input.
-
-#### Sprint 8 (Week 8): Fault Tolerance & Crash Recovery Testing
-- **Deliverables**:
-  - Automated Chaos Test: A test script that repeatedly sends `SIGKILL` to worker nodes at steps 3, 7, and 12 of an issue resolution run.
-  - Snapshot persistence: MicroVM state snapshots (`snapshotSandboxActivity`) on critical checkpoints.
-- **Verification**: 100% of interrupted workflows successfully rehydrate state and complete execution upon worker restart.
+#### 2.3 Human-in-the-Loop Interactivity
+- Dangerous commands (`git push`, `rm -rf`, `npm publish`, production deploys) trigger an approval halt:
+  - Temporal workflow enters `await condition(() => approvalDecision !== null, "10 minutes")`.
+  - Sends interactive Slack Block Kit / Discord Button prompt (`[Approve] [Reject]`).
+  - Receiving `approveExecutionSignal(true)` resumes execution; `false` yields a blocked observation.
 
 ---
 
-### Phase 3: Context Compaction & Dynamic Model Routing (Weeks 9–12)
+### Module 3: AST Context Compaction & Anti-Rot (`packages/context-engine`)
 
-#### Sprint 9 (Week 9): AST-Guided Observation Truncator (`@hermes/context-engine`)
-- **Deliverables**:
-  - Terminal log filter for outputs exceeding 50 lines.
-  - Stack trace preservation engine: parses python tracebacks, Node.js stack traces, compiler errors, and failed test assertions.
-  - Truncates repetitive build/lint noise while preserving critical diagnostic context.
-- **Verification**: Pass a 1,000-line failed Jest run through `ObservationTruncator.truncate()` and verify output is trimmed to $\le 50$ lines with exact failure stack trace retained.
+#### 3.1 Code Skeleton Extractor (`CodeSkeletonExtractor`)
+- Extracts class declarations, interface definitions, exported types, and method signatures while replacing implementation bodies with `/* ... body elided ... */`.
+- Languages supported: TypeScript (`.ts`, `.tsx`), JavaScript (`.js`), Python (`.py`), Go (`.go`), Rust (`.rs`).
+- Cuts repository discovery context overhead by **70%**.
 
-#### Sprint 10 (Week 10): Git Patch Differential Memory
-- **Deliverables**:
-  - `GitPatchMemory`: Replaces repeated ingestion of entire modified source files with minimal unified Git diff patches (`git diff HEAD`).
-  - Hunk parsing and modification tracking per file.
-  - Integration into workflow context prompt.
-- **Verification**: Measure token savings across a 15-step editing task; verify $\ge 40\%$ token reduction compared to full-file re-prompting.
+#### 3.2 Structured Test Failure Extraction (`TestFailureParser`)
+- Parses outputs from **Jest**, **Vitest**, **Pytest**, **Go Test**, and **Cargo**.
+- Suppresses thousands of lines of passing tests.
+- Extracts:
+  - Exact failing test identifier and file location.
+  - Expected vs. Received assertion diffs.
+  - Trimmed failure stack traces.
 
-#### Sprint 11 (Week 11): 75% Capacity Context Compactor
-- **Deliverables**:
-  - `TokenBudgeter`: Real-time token counter tracking context capacity.
-  - 75% threshold detector: Triggers hierarchical compaction when context size $\ge 75\%$ of maximum window (e.g. 150k / 200k tokens).
-  - `ContextCompactor`: Compresses historical steps $1 \dots t-3$ into structured key discoveries and attempted hypotheses, while preserving steps $t-2 \dots t$ verbatim.
-- **Verification**: Simulate a 50-step trajectory reaching 200k tokens; verify compaction successfully compresses context back down to $\approx 40\%$ window capacity without losing active code patches.
-
-#### Sprint 12 (Week 12): Dynamic Model Routing & Cost Policy (`@hermes/model-router`)
-- **Deliverables**:
-  - `TaskComplexityClassifier`:
-    - **Tier 1 (Fast/Lightweight)**: Claude 3.5 Haiku / Llama-3-8B for file reads, directory navigation, formatting, and routine bash commands.
-    - **Tier 2 (Deep Reasoning)**: Claude 3.5 Sonnet / DeepSeek-R1 for initial strategy planning, bug diagnosis, and post-error recovery.
-  - Cost and security policy: Max token ceiling (500k), max cost ceiling ($5.00), and regex filters for dangerous shell commands (`rm -rf /`, fork bombs, etc.).
-- **Verification**: Validate that file read tasks are dispatched to Haiku while complex syntax errors automatically escalate to Sonnet/DeepSeek.
+#### 3.3 Unified Git Differential Memory (`GitPatchMemory`)
+- Replaces repeated full-file re-prompts with unified Git diff patches (`git diff HEAD`).
+- Maintains hunk-level statistics (lines added, lines removed, modified hunks).
+- Reduces multi-step trajectory token consumption by **45%**.
 
 ---
 
-### Phase 4: Benchmarking, Web Dashboard & Research Paper (Weeks 13–16)
+### Module 4: Dynamic Model Router & Guardrails (`packages/model-router`)
 
-#### Sprint 13 (Week 13): SWE-Bench Style Evaluation Harness (`@hermes/eval-suite`)
-- **Deliverables**:
-  - Automated benchmark harness loaded with real GitHub issues (e.g. `dubinc/dub`, `expressjs/cors`, `chalk`).
-  - Isolated verification sandbox: mounts repo, applies agent's git patch, runs unit tests, and verifies pass/fail.
-  - `MetricsCollector`: Gathers pass rate, duration, tokens consumed, and monetary cost.
-- **Verification**: Run `pnpm eval` and generate an automated report across 3 benchmark cases.
+#### 4.1 Tier Routing Matrix
+- **Tier 1 (Fast / Routine)**: Claude 3.5 Haiku / Llama-3.3-70B.
+  - Purpose: Directory traversal, file reads, routine bash syntax, formatting.
+  - Cost: \$0.80 input / \$4.00 output per MTok.
+- **Tier 2 (Deep Reasoning)**: Claude 3.5 Sonnet / DeepSeek-R1.
+  - Purpose: Architecture planning, root-cause bug diagnosis, multi-file refactoring.
+  - Cost: \$3.00 input / \$15.00 output per MTok (Sonnet), \$0.55 / \$2.19 per MTok (DeepSeek-R1).
 
-#### Sprint 14 (Week 14): Full-Featured Next.js 15 Web Dashboard (`@hermes/web`)
-- **Deliverables**:
-  - Live Xterm.js terminal emulator streaming microVM output in real-time.
-  - Step timeline visualizing agent thoughts, selected model tier, tool calls, and observations.
-  - Side-by-side Git diff viewer with syntax highlighting.
-  - Token budget gauge with dynamic 75% compaction indicator.
-- **Verification**: Launch task from web UI; observe live terminal output and step updates in under 200ms latency.
-
-#### Sprint 15 (Week 15): Long-Term Memory (Qdrant) & Optimization
-- **Deliverables**:
-  - Qdrant vector memory store for semantic codebase search and past issue solution retrieval.
-  - End-to-end load testing and memory leak audits.
-- **Verification**: Store a solution vector, perform similarity search, and verify relevant context injection into new tasks.
-
-#### Sprint 16 (Week 16): Research Manuscript, Documentation & Final Presentation
-- **Deliverables**:
-  - Finalize research manuscript: *"Durable Multi-Platform Agent Execution with MicroVM Sandboxing and AST-Guided Context Compaction"*.
-  - Compile empirical benchmark tables comparing vanilla ReAct vs. Hermes-Clawdbot.
-  - Produce high-definition 3-minute capstone video demonstration showing Slack/Discord/Web coordination and crash recovery.
-- **Verification**: Full project artifacts packaged, tested, and pushed to `https://github.com/farhan4783/Brain-Academy.git`.
+#### 4.2 Failover Circuit Breaker & Security Scanner
+- Tripping threshold: 3 consecutive 429/5xx errors opens circuit for 60s, automatically redirecting traffic to secondary fallback models.
+- Prompt Security Scanner: Regex and semantic pattern filters intercept instruction overrides, jailbreak attempts, host probing, and obfuscated payloads before dispatching to LLM APIs.
 
 ---
 
-## 3. Risk Matrix & Mitigation Strategies
+### Module 5: Universal Gateway Control Plane (`packages/gateway`)
 
-| Risk | Impact | Probability | Mitigation Strategy |
-| :--- | :--- | :--- | :--- |
-| **Firecracker KVM requires bare-metal Linux** | High | High (on Windows) | Implemented 3-tier sandbox fallback: E2B cloud microVMs $\to$ Firecracker KVM $\to$ Local Docker containers. |
-| **Worker process crash midway through task** | High | Medium | Temporal.io event log rehydration resumes from the exact activity step with zero state loss. |
-| **Context window blowup on verbose test runs** | High | High | `ObservationTruncator` strictly caps output to 50 lines, isolating stack traces and trimming noise. |
-| **Runaway LLM API costs** | Medium | Medium | Hard budget caps ($5.00/task), token ceiling (500k), and Tier 1 model routing for routine operations. |
-| **Malicious or destructive bash commands** | Critical | Low | Sandboxed execution in non-root microVMs plus proactive command pattern blocking in `CostAndSafetyPolicy`. |
+#### 5.1 JSON-RPC 2.0 Protocol Specifications (`ws://127.0.0.1:18789`)
+- **Actions**:
+  - `auth.pair`: Generates 6-digit pairing code with HMAC-SHA256 signature.
+  - `auth.verify`: Validates code and issues signed Bearer token.
+  - `task.submit`: Ingests `TaskRequest` and triggers Temporal durable workflow.
+  - `task.pause` / `task.resume`: Pauses/resumes active trajectory.
+  - `task.approve`: Submits human approval decision for sensitive commands.
+  - `task.cancel`: Aborts workflow and runs compensating rollback.
+  - `state.query`: Returns live step history, token counts, and diffs.
+  - `memory.get`: Retrieves `SOUL.md`, `USER.md`, `MEMORY.md`, and episodic logs.
+  - `skills.list`: Returns all installed and synthesized procedural skills.
+
+#### 5.2 Multi-Platform Adapters
+- **Slack**: `@slack/bolt` with Block Kit buttons and thread-level tracking.
+- **Discord**: `discord.js` with ActionRow buttons and syntax-highlighted embeds.
+- **Telegram**: `grammY` bot with command routing (`/fix`, `/status`) and inline keyboards.
+- **WhatsApp**: Meta Cloud API webhook listener with `hub.challenge` handshake.
+- **Autonomous Scheduler**: Node-cron backed recurring jobs paired with silent Heartbeat daemon.
 
 ---
 
-## 4. Key Milestones & Acceptance Criteria
+### Module 6: 4-Tier Memory & Self-Evolution Learning Loop (`packages/memory`)
 
-1. **Milestone 1 (Week 4)**: Ephemeral sandbox boots in $<500\text{ ms}$; multi-platform gateway responds on CLI, Slack, and Discord.
-2. **Milestone 2 (Week 8)**: Temporal workflow recovers seamlessly from simulated worker container crashes (`SIGKILL`).
-3. **Milestone 3 (Week 12)**: AST truncation and Git differential memory demonstrate $\ge 40\%$ reduction in token expenditure.
-4. **Milestone 4 (Week 16)**: SWE-bench style benchmark suite completes with verified test passes; research paper and demo video finalized.
+#### 6.1 4-Tier Memory Layout
+- **L1 (Session)**: Ephemeral in-memory context cleared upon task completion.
+- **L2 (Persisted Files)**:
+  - `SOUL.md`: Identity, operational principles, core guidelines.
+  - `USER.md`: User tech preferences, conventions, notification channels.
+  - `MEMORY.md`: Long-term curated factual discoveries.
+  - `memory/YYYY-MM-DD.md`: Episodic session audit trails.
+- **L3 (Vector & Search)**: Qdrant vector memory (1536-dim embeddings) + local full-text search.
+- **L4 (Procedural Skills)**: Reusable `skills/<skill_name>/SKILL.md` playbooks.
 
+#### 6.2 Self-Evolution Learning Loop Mechanics
+- When a workflow finishes with `status === "COMPLETED"` and $\ge 2$ successful tool actions:
+  1. Reflection agent analyzes trajectory steps and isolates the winning sequence.
+  2. Generates a new `SKILL.md` with structured YAML frontmatter, execution steps, and verification commands.
+  3. Appends the newly synthesized skill to the progressive disclosure catalog.
+
+---
+
+### Module 7: SWE-Bench Automated Evaluation Harness (`packages/eval-suite`)
+
+#### 7.1 Benchmark Workflow
+1. Loads benchmark case from `packages/eval-suite/data/benchmarks.json`.
+2. Clones target open-source repository commit into a microVM sandbox.
+3. Dispatches task prompt to Hermes-Clawdbot.
+4. Spawns an isolated verification container, applies the synthesized Git patch, and executes the target unit test suite.
+5. Verifies all expected test assertions pass (pass@1).
+6. Compiles empirical evaluation report with token efficiency, duration, and monetary cost metrics.

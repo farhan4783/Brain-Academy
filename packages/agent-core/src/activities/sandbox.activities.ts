@@ -67,3 +67,27 @@ export async function destroySandboxActivity(sandboxId: string): Promise<void> {
   }
 }
 
+export async function compensatingTransactionsActivity(
+  sandboxId: string,
+  taskId: string,
+  reason: string
+): Promise<{ snapshotId?: string }> {
+  console.log(`[Temporal Saga] Executing compensating transactions for failed task ${taskId}...`);
+  const sandbox = activeSandboxPool.get(sandboxId);
+  let snapshotId: string | undefined;
+
+  if (sandbox) {
+    try {
+      snapshotId = await sandbox.snapshotState(`failure_${Date.now()}`);
+      console.log(`[Temporal Saga] Captured failure post-mortem snapshot: ${snapshotId}`);
+    } catch {
+      // Best effort
+    }
+    await sandbox.destroy().catch(() => {});
+    activeSandboxPool.delete(sandboxId);
+  }
+
+  return { snapshotId };
+}
+
+
